@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, tzinfo, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, session, redirect
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
@@ -15,15 +15,20 @@ def create_app():
 app = create_app()
 db = SQLAlchemy(app)
 
-
+class simple_utc(tzinfo):
+    def tzname(self,**kwargs):
+        return "UTC"
+    def utcoffset(self, dt):
+        return timedelta(hours=2)
+print(datetime.utcnow().replace(tzinfo=simple_utc()))
 class User(db.Model):
     id = db.Column(db.String(20), primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
-    date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    date_posted = db.Column(db.String(30), nullable=False, default=datetime.utcnow().replace(tzinfo=simple_utc()).isoformat())
     posts = db.relationship('Post', backref='author', lazy=True)
 
     def __repr__(self):
-        return f"User('{self.username}')"
+        return f"User('{self.username}','{self.date_posted}')"
 
 
 class Post(db.Model):
