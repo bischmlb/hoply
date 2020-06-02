@@ -4,8 +4,12 @@ from config import *
 
 @app.route("/")
 @app.route("/index")
-def home():
+def index():
     return render_template('index.html')
+
+@app.route("/signup")
+def signup():
+    return render_template('signup.html')
 
 
 
