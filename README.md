@@ -1,5 +1,4 @@
 # Hoply (DM564 Exam project)
----
 
 ### Phase 1 - The Local Database (here)
 In this first phase, you are to design, implement, and make accessible to your
