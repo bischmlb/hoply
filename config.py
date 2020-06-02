@@ -9,7 +9,7 @@ def create_app():
     app = Flask(__name__)
     app.debug = True
     app.config['SECRET_KEY'] = os.urandom(12)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
     return app
 
 app = create_app()
@@ -31,8 +31,6 @@ class Post(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
     date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-
-
 
     def __repr__(self):
         return f"Post('{self.title}', '{self.date_posted}')"
