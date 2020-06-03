@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Home - Hoply</title>
+	<meta charset="UTF-8">
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<h6> TILLYKKE DU ER LOGGET IND :) </h6>
+<div class="container-fluid">
+<div class="row">
+	<div class="col-6">
+			<form action='/post' method="POST" class="">
+
+				<div class="col-3" data-validate="User ID">
+					<input class="input100" type="text" name="content" placeholder="User ID">
+					<span class="focus-input100"></span>
+				</div>
+				{{ message }}
+
+
+
+				<div class="button">
+					<button class="login100-form-btn">
+						submit text
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+</body>
+</html>

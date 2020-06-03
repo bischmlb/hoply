@@ -21,21 +21,31 @@ class simple_utc(tzinfo):
     def utcoffset(self, dt):
         return timedelta(hours=2)
 print(datetime.utcnow().replace(tzinfo=simple_utc()))
+
 class User(db.Model):
     id = db.Column(db.String(20), primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
     date_posted = db.Column(db.String(30), nullable=False, default=datetime.utcnow().replace(tzinfo=simple_utc()).isoformat())
     posts = db.relationship('Post', backref='author', lazy=True)
-
+    comments = db.relationship('Comment',backref='author',lazy=True)
     def __repr__(self):
         return f"User('{self.username}','{self.date_posted}')"
 
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.String(20), db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    date_posted = db.Column(db.String(30), nullable=False, default=datetime.utcnow().replace(tzinfo=simple_utc()).isoformat())
+    comments = db.relationship('Comment',backref='root',lazy=True)
+    def __repr__(self):
+        return f"Post('{self.content}', '{self.date_posted}')"
+
+class Comment(db.Model):
+    user_id = db.Column(db.String(20), db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    date_posted = db.Column(db.String(30), primary_key=True ,nullable=False, default=datetime.utcnow().replace(tzinfo=simple_utc()).isoformat())
 
     def __repr__(self):
-        return f"Post('{self.id}', '{self.date_posted}')"
+        return f"Comment('{self.content}', '{self.date_posted}')"
