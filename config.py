@@ -32,6 +32,7 @@ class User(db.Model):
         return f"User('{self.username}','{self.date_posted}')"
 
 
+
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(20), db.ForeignKey('user.id'), nullable=False)
@@ -39,7 +40,7 @@ class Post(db.Model):
     date_posted = db.Column(db.String(30), nullable=False, default=datetime.utcnow().replace(tzinfo=simple_utc()).isoformat())
     comments = db.relationship('Comment',backref='root',lazy=True)
     def __repr__(self):
-        return f"Post('{self.content}', '{self.date_posted}')"
+        return f"Post('{self.id}','{self.content}', '{self.date_posted}')"
 
 class Comment(db.Model):
     user_id = db.Column(db.String(20), db.ForeignKey('user.id'), nullable=False)
@@ -49,3 +50,5 @@ class Comment(db.Model):
 
     def __repr__(self):
         return f"Comment('{self.content}', '{self.date_posted}')"
+
+db.create_all()
