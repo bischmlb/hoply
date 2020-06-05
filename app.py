@@ -5,14 +5,16 @@ import random
 @app.route("/")
 @app.route("/index", methods=['GET','POST'])
 def index():
+    updateLocal()
     if request.method == 'POST':
+        ### --- Local --- ###
         session['user_id'] = request.form.get('userid')
         user_id = session['user_id']
         query = User.query.filter_by(id=user_id).first()
         if query == None:
             userNotFound = "Username was not recognized"
             return render_template('index.html', message=userNotFound)
-        elif user_id == query.id:
+        else: ### If lists are not empty it means user exists and we log in
             print("Sucessfully logged in")
             users = showUsers()
             content = showContent()
@@ -24,25 +26,30 @@ def index():
                                                     list_pid = pid,
                                                     generateComments=showComments,
                                                     generateCommentsUser=showCommentsUser)
-        else:
-            return render_template('index.html')
+    else:
+        return render_template('index.html')
     return render_template('index.html')
 
 
 @app.route("/signup", methods=['GET','POST'])
 def signup():
+    updateLocal()
     if request.method == 'POST':
         user_id = request.form.get('userid')
         full_name = request.form.get('name')
         print(user_id)
-        add_user(user_id, full_name)
-        return redirect(url_for('index'))
+        newUser = add_user(user_id, full_name)
+        if newUser == False:
+            return render_template('signup.html')
+        else:
+            return redirect(url_for('index'))
     else:
         return render_template('signup.html')
 
 
 @app.route("/content", methods=['GET','POST'])
 def content():
+    updateLocal()
     users = showUsers()
     content = showContent()
     time = showTimestamp()
@@ -56,6 +63,7 @@ def content():
 
 @app.route("/post", methods=['GET','POST'])
 def post():
+    updateLocal()
     user = session.get('user_id')
     if request.method == 'POST':
         content = request.form.get('content')
@@ -75,6 +83,7 @@ def post():
 
 @app.route("/comment", methods=['GET','POST'])
 def comment():
+    updateLocal()
     user = session.get('user_id')
     if request.method == 'POST':
         pid = request.form.get('pid')
@@ -110,45 +119,62 @@ def post_iter(userid):
                 commentsUserId.append(y.user_id)
     return commentsUserId
 
+
 def showUsers():
-    list = fetch_postAll()
+    userlist = fetch_postAll()
+    remoteList = []
+    for x in postsJson:
+        remoteList.append(x['user_id'])
     total = []
-    for x in list:
+    for x in userlist:
         total.append(x.user_id)
-    return total
+    print("\n\n\n\n",list(set(total + remoteList)))
+    final = (total + remoteList)
+    return final
+
+
 
 def showContent():
-    list = fetch_postAll()
+    contentlist = fetch_postAll()
+    remoteList = []
+    for x in postsJson:
+        remoteList.append(x['content'])
     total = []
-    for x in list:
+    for x in contentlist:
         total.append(x.content)
-    return total
+    return (total + remoteList)
 
 def showTimestamp():
-    list = fetch_postAll()
+    timestamplist = fetch_postAll()
+    remoteList = []
+    for x in postsJson:
+        remoteList.append(x['stamp'])
     total = []
-    for x in list:
+    for x in timestamplist:
         total.append(x.date_posted)
-    return total
+    return (total + remoteList)
 
 def showPostId():
-    list = fetch_postAll()
+    postlist = fetch_postAll()
+    remoteList = []
+    for x in postsJson:
+        remoteList.append(x['id'])
     total = []
-    for x in list:
+    for x in postlist:
         total.append(x.id)
-    return total
+    return (total + remoteList)
 
 def showComments(pid):
-    list = Comment.query.filter_by(post_id = pid).all()
+    commentlist = Comment.query.filter_by(post_id = pid).all()
     total = []
-    for x in list:
+    for x in commentlist:
         total.append(x.content)
     return total
 
 def showCommentsUser(pid):
-    list = Comment.query.filter_by(post_id = pid).all()
+    showCommentlist = Comment.query.filter_by(post_id = pid).all()
     total = []
-    for x in list:
+    for x in showCommentlist:
         total.append(x.user_id)
     return total
 
@@ -170,30 +196,30 @@ def fetch_postByUser(post_id):
 def fetch_postAll():
     return Post.query.order_by(Post.date_posted.desc()).all()
 
-def create_post(post_id,user_id,content):
-    new_post= Post(id=post_id,user_id=user_id,content=content, date_posted = datetime.utcnow().replace(tzinfo=simple_utc()).isoformat())
-    db.session.add(new_post)
-    db.session.commit()
 
-def add_comment(user_id,post_id,content):
-    new_comment = Comment(user_id=user_id,post_id=post_id,content=content, date_posted = datetime.utcnow().replace(tzinfo=simple_utc()).isoformat())
-    db.session.add(new_comment)
-    db.session.commit()
 
-def checkUser(new_id):
-    exist = User.query.filter_by(id=new_id)
-    if exist == []: # If exist is empty, username is not taken
+def checkPosts(new_id):
+    exist = Post.query.filter_by(id=new_id).first()
+    if exist == None: # If exist is empty, username is avialable
         return True
     else:
         return False
+'''
+def checkComment(user_id,post_id,new_timestamp):
+    #comments = Comment.query.filter_by(id=new_timestamp).all()
+    #for i in comments:
+        if (i.commentor.id==user_id && i.root.id==post_id)
+            return False
+    return True
 
-def add_user(new_id,new_username):
-    if checkUser(new_id):
-        new_user = User(id=new_id,username=new_username,date_posted=datetime.utcnow().replace(tzinfo=simple_utc()).isoformat())
-        db.session.add(new_user)
-        db.session.commit()
+
+    if existUser == None: # If exist is empty, username is avialable
+        return True
     else:
-        print("Name is already taken")
+        return False
+'''
+
+
 
 
 
