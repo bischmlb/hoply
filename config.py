@@ -1,9 +1,11 @@
 import os
-from datetime import datetime, tzinfo, timedelta
+from datetime import datetime, tzinfo, timedelta,timezone
 from flask import Flask, render_template, request, redirect, url_for, flash, session, redirect
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 import requests
+from collections import Counter
+import itertools
 
 
 def create_app():
@@ -17,28 +19,29 @@ app = create_app()
 db = SQLAlchemy(app)
 
 
-class simple_utc(tzinfo):
-    def tzname(self,**kwargs):
-        return "UTC"
-    def utcoffset(self, dt):
-        return timedelta(hours=2)
-print(datetime.utcnow().replace(tzinfo=simple_utc()))
+def utc_to_local(utc_dt):
+    return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
+def aslocaltimestr(utc_dt):
+    return utc_to_local(utc_dt).strftime('%Y-%m-%dT%H:%M:%S.%f+02:00')
+
+print(aslocaltimestr(datetime.utcnow()))
+print(datetime.now())
 
 class User(db.Model):
     id = db.Column(db.String(20), unique=True, primary_key=True)
     username = db.Column(db.String(20), nullable=False)
-    date_posted = db.Column(db.String(30), nullable=False, default=datetime.utcnow().replace(tzinfo=simple_utc()).isoformat())
+    date_posted = db.Column(db.String(30), nullable=False, default=aslocaltimestr(datetime.utcnow()))
     posts = db.relationship('Post', backref='author', lazy=True)
     comments = db.relationship('Comment',backref='commentor',lazy=True)
     def __repr__(self):
-        return f"User('{self.username}','{self.date_posted}')"
+        return f"User('{self.id}',''{self.username}'','{self.date_posted}')"
 
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(20), db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    date_posted = db.Column(db.String(30), nullable=False, default=datetime.utcnow().replace(tzinfo=simple_utc()).isoformat())
+    date_posted = db.Column(db.String(30), nullable=False, default=aslocaltimestr(datetime.utcnow()))
     comments = db.relationship('Comment',backref='root',lazy=True)
     def __repr__(self):
         return f"Post('{self.id}','{self.content}', '{self.date_posted}')"
@@ -47,7 +50,7 @@ class Comment(db.Model):
     user_id = db.Column(db.String(20), db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    date_posted = db.Column(db.String(30), primary_key=True ,nullable=False, default=datetime.utcnow().replace(tzinfo=simple_utc()).isoformat())
+    date_posted = db.Column(db.String(30), primary_key=True ,nullable=False, default=aslocaltimestr(datetime.utcnow()))
 
     def __repr__(self):
         return f"Comment('{self.content}', '{self.date_posted}')"
@@ -64,7 +67,35 @@ usersJson = remoteUsers.json()
 remoteComments = requests.get('http://caracal.imada.sdu.dk/app2020/comments')
 commentsJson = remoteComments.json()
 #################################
+def post(input, table):
+    url = 'http://caracal.imada.sdu.dk/app2020/'+ table
+    headers = {'Authorization' : 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXBwMjAyMCJ9.PZG35xIvP9vuxirBshLunzYADEpn68wPgDUqzGDd7ok'}
+    requests.post(url, data=input, headers=headers)
 
+#################################
+#topfan
+def most_frequent(userid):
+    List = post_iter(userid)
+    #List=list(itertools.chain.from_iterable(List))
+    print(List)
+    occurence_count = Counter(List)
+    #print(occurence_count.most_common(1)[0][0])
+    return occurence_count.most_common(1)[0][0]
+
+def post_iter(userid):
+    posts = Post.query.filter_by(user_id=userid).all()
+    postid = []
+    commentsUserId = []
+    for i in posts:
+        postid.append(i.id)
+    if not postid:
+        return None
+    for x in postid:
+        comments = Comment.query.filter_by(post_id=x)
+        if comments != None:
+            for y in comments:
+                commentsUserId.append(y.user_id)
+    return commentsUserId
 
 ########## add to database methods #####
 def checkUser(new_id):
@@ -86,20 +117,25 @@ def checkComment(user_id,post_id,new_timestamp):
             return False
     return True
 
-def add_user(new_id,new_username, stamp=datetime.utcnow().replace(tzinfo=simple_utc()).isoformat()):
+def add_user(new_id,new_username, stamp=aslocaltimestr(datetime.utcnow())):
     if checkUser(new_id):
         new_user = User(id=new_id,username=new_username,date_posted=stamp)
         db.session.add(new_user)
         db.session.commit()
+        upload = {'id': new_user.id, 'name':new_user.username,'stamp': new_user.date_posted}
+        # print(upload)
+        post(upload, 'users')
         return True
     else:
         return False
 
-def create_post(post_id,user_id,content, stamp=datetime.utcnow().replace(tzinfo=simple_utc()).isoformat()):
+def create_post(post_id,user_id,content, stamp=aslocaltimestr(datetime.utcnow())):
     if checkPosts(post_id):
         new_post= Post(id=post_id,user_id=user_id,content=content, date_posted=stamp)
         db.session.add(new_post)
         db.session.commit()
+        upload = {'id':new_post.id,'user_id':new_post.user_id,'content':new_post.content,'stamp' : new_post.date_posted}
+        post(upload, 'posts')
         return True
     else:
         return False
@@ -109,16 +145,24 @@ def add_commentRemote(user_id,post_id,content, stamp):
         new_comment = Comment(user_id=user_id,post_id=post_id,content=content, date_posted=stamp)
         db.session.add(new_comment)
         db.session.commit()
+        upload = {'user_id':new_comment.user_id,'post_id':new_comment.post_id,'content':new_comment.content,'stamp':new_comment.date_posted}
+        post(upload,'comments')
         return True
     else:
         return False
 
 def add_comment(user_id,post_id,content):
-    stamp = datetime.utcnow().replace(tzinfo=simple_utc()).isoformat()
+    stamp = aslocaltimestr(datetime.utcnow())
     if checkComment(user_id,post_id, stamp):
         new_comment = Comment(user_id=user_id,post_id=post_id,content=content, date_posted=stamp)
         db.session.add(new_comment)
         db.session.commit()
+        postMaker = new_comment.root.user_id
+        topfan = most_frequent(postMaker)
+        print("topfan: ",topfan)
+        upload = {'user_id':new_comment.user_id,'post_id':new_comment.post_id,'content':new_comment.content,'stamp':new_comment.date_posted}
+
+        post(upload,'comments')
         return True
     else:
         return False

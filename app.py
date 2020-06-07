@@ -1,6 +1,8 @@
 from flask import Markup
 from config import *
 import random
+from collections import Counter
+import itertools
 
 @app.route("/")
 @app.route("/index", methods=['GET','POST'])
@@ -40,7 +42,7 @@ def signup():
         print(user_id)
         newUser = add_user(user_id, full_name)
         if newUser == False:
-            return render_template('signup.html')
+            return render_template('signup.html', message = "ID already taken")
         else:
             return redirect(url_for('index'))
     else:
@@ -88,7 +90,9 @@ def comment():
     if request.method == 'POST':
         pid = request.form.get('pid')
         content = request.form.get('content')
+
         comment = add_comment(user, int(pid), content)
+
         return redirect(url_for('content'))
 
 
@@ -99,10 +103,16 @@ def comment():
 def most_frequent(userid):
     List = post_iter(userid)
     #List=list(itertools.chain.from_iterable(List))
-    print(List)
+    # print(List)
     occurence_count = Counter(List)
-    print(occurence_count.most_common(1)[0][0])
-    return occurence_count.most_common(1)[0][0]
+    # print(occurence_count.most_common(1)[0][0])
+
+    # print((userid,"'s Top Fan is: ",(occurence_count)))
+
+    if not occurence_count:
+        return False
+    else:
+        return occurence_count.most_common(1)[0][0]
 
 def post_iter(userid):
     posts = Post.query.filter_by(user_id=userid).all()
@@ -128,7 +138,7 @@ def showUsers():
     total = []
     for x in userlist:
         total.append(x.user_id)
-    print("\n\n\n\n",list(set(total + remoteList)))
+    # print("\n\n\n\n",list(set(total + remoteList)))
     final = (total + remoteList)
     return final
 
@@ -174,8 +184,16 @@ def showComments(pid):
 def showCommentsUser(pid):
     showCommentlist = Comment.query.filter_by(post_id = pid).all()
     total = []
+    postOwner = Post.query.filter_by(id = pid).first().user_id
+    topfan = most_frequent(postOwner)
     for x in showCommentlist:
-        total.append(x.user_id)
+        print("x: ", x.user_id, "\t topfan: ", topfan)
+        if x.user_id == topfan:
+            total.append("⭐ " + x.user_id)
+        # elif:
+        #     total.append(x.user_id)
+        else:
+            total.append(x.user_id)
     return total
 
 
