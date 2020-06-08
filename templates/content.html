@@ -31,9 +31,39 @@
 	</div>
 </div>
 
+<div class="container-fluid">
+<div class="row">
+<div class="col-8 general center py-3">
+<form action='/upload' class="uploader" method="POST" enctype="multipart/form-data">
+  <div class="form-group">
+  <input id="file" type="file" name="file"/>
+
+  <label for="file" id="file-drag">
+    <div id="start">
+      <i class="fa fa-download" aria-hidden="true"></i>
+      <br>
+      <br>
+      <p id="fileText">Select a file to be uploaded<p>
+    </div>
+    <div id="response" class="hidden">
+      <div id="messages"></div>
+      <progress class="progress" id="file-progress" value="0">
+        <span>0</span>%
+      </progress>
+    </div>
+  </label>
+  <button type="submit" class="btn btnUpload btn-outline-primary">Upload File</button>
+  <br>
+  </div>
+  <div class="col-4 general">
+  </div>
+</form>
+</div>
+
 <br>
 <br>
 <br>
+
 
 <div class="container-fluid">
 <div class="row">
@@ -42,17 +72,26 @@
 	<div class="col-10 general" style="border-style: none; background: #5cb85c;
 	border-radius: 10px 10px 10px 10px;">
 			<hr>
-			{% for i in list_users %}
+			{% for i in list_users %} <!-- for loop for each entry -->
 						{% set timestamp = list_timestamp[loop.index-1] %}
       			<p style="font-weight: 700;"> {{ i }} </p>
 					  <p style="font-size: 10px;"> wrote at {{ timestamp }} </p>
 						{% set j = list_content[loop.index-1] %}
-						{% set pid = list_pid[loop.index-1] %}
+						{% set img = checkImg(j) %}
+
+						{% if img %}
+							{% set showImg = getImageStr(j) %}
+							{% set j = getNewStr(j) %}
+						{% endif %}
 						<p style = "font-weight: 400;">  {{ j }} <p>
 
+						{% set pid = list_pid[loop.index-1] %}
+						{% if img %}
+							<img src="data:image/jpeg;base64, {{ showImg }}"/>
+						{% endif %}
 						<div class="col-7">
 						<p style="font-weight: 700;"> Comments: </p>
-						{% set commentList = generateComments(pid) %}
+						{% set commentList = generateComments(pid) %} <!--  -->
 						{% set commentsUser = generateCommentsUser(pid) %}
 						{% for comment in commentList %}
 							{% set user = commentsUser[loop.index-1] %}

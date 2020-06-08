@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 import requests
+import base64
 from collections import Counter
 import itertools
 
@@ -13,7 +14,13 @@ def create_app():
     app.debug = True
     app.config['SECRET_KEY'] = os.urandom(12)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+    UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.mkdir(UPLOAD_FOLDER)
+    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
     return app
+
 
 app = create_app()
 db = SQLAlchemy(app)
@@ -22,10 +29,10 @@ db = SQLAlchemy(app)
 def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
 def aslocaltimestr(utc_dt):
-    return utc_to_local(utc_dt).strftime('%Y-%m-%dT%H:%M:%S.%f+02:00')
+    return utc_to_local(utc_dt).strftime('%Y-%m-%dT%H:%M:%S.' + '%f'.rstrip('0') + '+02:00')  ## rstrip required to make compatible with remote database and avoid duplicate entries, cause not recognized as UNIQUE
 
-print(aslocaltimestr(datetime.utcnow()))
-print(datetime.now())
+# print(aslocaltimestr(datetime.utcnow()))
+# print(datetime.now())
 
 class User(db.Model):
     id = db.Column(db.String(20), unique=True, primary_key=True)
@@ -77,7 +84,6 @@ def post(input, table):
 def most_frequent(userid):
     List = post_iter(userid)
     #List=list(itertools.chain.from_iterable(List))
-    print(List)
     occurence_count = Counter(List)
     #print(occurence_count.most_common(1)[0][0])
     return occurence_count.most_common(1)[0][0]
@@ -118,8 +124,9 @@ def checkComment(user_id,post_id,new_timestamp):
     return True
 
 def add_user(new_id,new_username, stamp=aslocaltimestr(datetime.utcnow())):
+    stamp2 = aslocaltimestr(datetime.utcnow())
     if checkUser(new_id):
-        new_user = User(id=new_id,username=new_username,date_posted=stamp)
+        new_user = User(id=new_id,username=new_username,date_posted=stamp2)
         db.session.add(new_user)
         db.session.commit()
         upload = {'id': new_user.id, 'name':new_user.username,'stamp': new_user.date_posted}
@@ -130,8 +137,9 @@ def add_user(new_id,new_username, stamp=aslocaltimestr(datetime.utcnow())):
         return False
 
 def create_post(post_id,user_id,content, stamp=aslocaltimestr(datetime.utcnow())):
+    stamp2 = aslocaltimestr(datetime.utcnow())
     if checkPosts(post_id):
-        new_post= Post(id=post_id,user_id=user_id,content=content, date_posted=stamp)
+        new_post= Post(id=post_id,user_id=user_id,content=content, date_posted=stamp2)
         db.session.add(new_post)
         db.session.commit()
         upload = {'id':new_post.id,'user_id':new_post.user_id,'content':new_post.content,'stamp' : new_post.date_posted}
@@ -159,7 +167,6 @@ def add_comment(user_id,post_id,content):
         db.session.commit()
         postMaker = new_comment.root.user_id
         topfan = most_frequent(postMaker)
-        print("topfan: ",topfan)
         upload = {'user_id':new_comment.user_id,'post_id':new_comment.post_id,'content':new_comment.content,'stamp':new_comment.date_posted}
 
         post(upload,'comments')
