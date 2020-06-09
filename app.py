@@ -34,7 +34,9 @@ def index():
                                                     generateComments=showComments,
                                                     generateCommentsUser=showCommentsUser,
                                                     checkImg=checkIfImg,
+                                                    checkGPS=checkIfGPS,
                                                     getNewStr=splitter2,
+                                                    getXY=getCoords,
                                                     getImageStr=splitter)
     else:
         return render_template('index.html')
@@ -74,7 +76,9 @@ def upload():
                                                         generateComments=showComments,
                                                         generateCommentsUser=showCommentsUser,
                                                         checkImg=checkIfImg,
+                                                        checkGPS=checkIfGPS,
                                                         getNewStr=splitter2,
+                                                        getXY=getCoords,
                                                         getImageStr=splitter)
             except:
                 print("EXCEPT ERRIOROROR")
@@ -103,10 +107,10 @@ def signup():
 
 @app.route("/content", methods=['GET','POST'])
 def content():
+    updateLocal()
     os.system("rm -rf uploads/*")
     if session.get('user_id') == None:
         return render_template('index.html')
-    updateLocal()
     users = showUsers()
     content = showContent()
     time = showTimestamp()
@@ -118,7 +122,9 @@ def content():
                                            generateComments=showComments,
                                            generateCommentsUser=showCommentsUser,
                                            checkImg=checkIfImg,
+                                           checkGPS=checkIfGPS,
                                            getNewStr=splitter2,
+                                           getXY=getCoords,
                                            getImageStr=splitter)
 
 @app.route("/post", methods=['GET','POST'])
@@ -127,10 +133,15 @@ def post():
     user = session.get('user_id')
     if request.method == 'POST':
         content = request.form.get('content')
+        gps = request.form.get('GPS')
+        if gps == 'true':
+            location = convertGPS()
+            content = content + location + " "
         imgStr = appendImg()
         contentImg = content + imgStr
         if contentImg == "": ## cannot make posts with no content
             return redirect(url_for("content"))
+        print(contentImg)
         create_post(gen(), user, contentImg)
         users = showUsers()
         content= showContent()
@@ -144,6 +155,8 @@ def post():
                                            generateComments=showComments,
                                            generateCommentsUser=showCommentsUser,
                                            checkImg=checkIfImg,
+                                           checkGPS=checkIfGPS,
+                                           getXY=getCoords,
                                            getNewStr=splitter2,
                                            getImageStr=splitter)
 
@@ -156,9 +169,7 @@ def comment():
     if request.method == 'POST':
         pid = request.form.get('pid')
         content = request.form.get('content')
-
         comment = add_comment(user, int(pid), content)
-
         return redirect(url_for('content'))
 
 
@@ -171,6 +182,17 @@ def convertImg(image_path):
     with open(image_path, "rb") as img_file:
         converted = base64.b64encode(img_file.read()).decode('utf-8')
         return "@IMG[" + converted + "]"
+
+def convertGPS():
+    g = geocoder.ip('me')
+    coords = g.latlng
+    return "@GPS[" + str(coords[0]) + "," + str(coords[1]) + "]"
+
+def getCoords(str):
+    splitAt = str.split("@GPS")[1]
+    splitAgain = splitAt.split("[")[1]
+    splitFinal = splitAgain.split("]")[0]
+    return splitFinal
 
 def appendImg():
     str = ""
@@ -190,12 +212,18 @@ def checkIfImg(str):
     else:
         return False
 
+def checkIfGPS(str):
+    if "@GPS[" in str:
+        return True
+    else:
+        return False
+
 def splitter2(str):
-    splitAt = str.split("@")[0]
+    splitAt = str.split("@IMG")[0]
     return splitAt
 
 def splitter(str):
-    splitAt = str.split("@")[1]
+    splitAt = str.split("@IMG")[1]
     splitFirstBracket = splitAt.split("[")[1]
     splitFinal = splitFirstBracket.split("]")[0]
     return splitFinal

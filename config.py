@@ -7,7 +7,7 @@ import requests
 import base64
 from collections import Counter
 import itertools
-
+import geocoder
 
 def create_app():
     app = Flask(__name__)
