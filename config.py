@@ -35,9 +35,9 @@ def aslocaltimestr(utc_dt):
 # print(datetime.now())
 
 class User(db.Model):
-    id = db.Column(db.String(20), unique=True, primary_key=True)
-    username = db.Column(db.String(20), nullable=False)
-    date_posted = db.Column(db.String(30), nullable=False, default=aslocaltimestr(datetime.utcnow()))
+    id = db.Column(db.String(30), unique=True, primary_key=True)
+    username = db.Column(db.String(30), nullable=False)
+    date_posted = db.Column(db.String(32), nullable=False, default=aslocaltimestr(datetime.utcnow()))
     posts = db.relationship('Post', backref='author', lazy=True)
     comments = db.relationship('Comment',backref='commentor',lazy=True)
     def __repr__(self):
@@ -46,18 +46,18 @@ class User(db.Model):
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(20), db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.String(30), db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    date_posted = db.Column(db.String(30), nullable=False, default=aslocaltimestr(datetime.utcnow()))
+    date_posted = db.Column(db.String(32), nullable=False, default=aslocaltimestr(datetime.utcnow()))
     comments = db.relationship('Comment',backref='root',lazy=True)
     def __repr__(self):
         return f"Post('{self.id}','{self.content}', '{self.date_posted}')"
 
 class Comment(db.Model):
-    user_id = db.Column(db.String(20), db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.String(30), db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    date_posted = db.Column(db.String(30), primary_key=True ,nullable=False, default=aslocaltimestr(datetime.utcnow()))
+    date_posted = db.Column(db.String(32), primary_key=True ,nullable=False, default=aslocaltimestr(datetime.utcnow()))
 
     def __repr__(self):
         return f"Comment('{self.content}', '{self.date_posted}')"
@@ -83,9 +83,7 @@ def post(input, table):
 #topfan
 def most_frequent(userid):
     List = post_iter(userid)
-    #List=list(itertools.chain.from_iterable(List))
     occurence_count = Counter(List)
-    #print(occurence_count.most_common(1)[0][0])
     return occurence_count.most_common(1)[0][0]
 
 def post_iter(userid):
