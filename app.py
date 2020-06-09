@@ -62,7 +62,6 @@ def upload():
                 file.save(absPath)
                 print("INFO: ", filename, "was successfully uploaded.")
                 newfilename = filename + " was successfully uploaded!"
-                os.system("rm -rf upload/*")
                 users = showUsers()
                 content = showContent()
                 time = showTimestamp()
@@ -124,7 +123,6 @@ def content():
 
 @app.route("/post", methods=['GET','POST'])
 def post():
-    os.system("rm -rf uploads/*")
     updateLocal()
     user = session.get('user_id')
     if request.method == 'POST':
@@ -139,6 +137,7 @@ def post():
         content= showContent()
         time = showTimestamp()
         pid = showPostId()
+        os.system("rm -rf uploads/*")
     return render_template('content.html', list_users = users,
                                            list_content = content,
                                            list_timestamp = time,
