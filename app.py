@@ -92,7 +92,7 @@ def signup():
     if request.method == 'POST':
         user_id = request.form.get('userid')
         full_name = request.form.get('name')
-        print(user_id)
+        # print(user_id)
         newUser = add_user(user_id, full_name)
         if newUser == False:
             return render_template('signup.html', message = "ID already taken")
@@ -134,7 +134,7 @@ def post():
         if contentImg == "": ## cannot make posts with no content
             return redirect(url_for("content"))
         create_post(gen(), user, contentImg)
-        print("nice :)")
+        # print("nice :)")
         users = showUsers()
         content= showContent()
         time = showTimestamp()
