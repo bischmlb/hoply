@@ -1,4 +1,9 @@
 <!DOCTYPE html>
+<style>
+img{
+	width:75%;
+}
+</style>
 <html lang="en">
 <head>
 	<title>Home - Hoply</title>
@@ -87,7 +92,9 @@
 
 						{% set pid = list_pid[loop.index-1] %}
 						{% if img %}
+						<center>
 							<img src="data:image/jpeg;base64, {{ showImg }}"/>
+						</center>
 						{% endif %}
 						<div class="col-7">
 						<p style="font-weight: 700;"> Comments: </p>

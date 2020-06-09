@@ -132,7 +132,6 @@ def post():
         if contentImg == "": ## cannot make posts with no content
             return redirect(url_for("content"))
         create_post(gen(), user, contentImg)
-        # print("nice :)")
         users = showUsers()
         content= showContent()
         time = showTimestamp()
@@ -169,11 +168,8 @@ def comment():
 
 ### --- helpers --- ###
 def convertImg(image_path):
-    print("from convertImg", (image_path))
     with open(image_path, "rb") as img_file:
-        print("open file, convert")
         converted = base64.b64encode(img_file.read()).decode('utf-8')
-        # print("converted: ", converted)
         return "@IMG[" + converted + "]"
 
 def appendImg():
@@ -181,8 +177,6 @@ def appendImg():
     directory = os.path.join('uploads')
     for root,dirs,files in os.walk(directory):
         for file in files:
-            print("from findFiles", file)
-            print(convertImg("uploads/" + file) + "\n" + "hagsadgagdssagdagd")
             str = convertImg("uploads/" + file)
     return str
 
@@ -326,22 +320,6 @@ def checkPosts(new_id):
         return True
     else:
         return False
-'''
-def checkComment(user_id,post_id,new_timestamp):
-    #comments = Comment.query.filter_by(id=new_timestamp).all()
-    #for i in comments:
-        if (i.commentor.id==user_id && i.root.id==post_id)
-            return False
-    return True
-
-
-    if existUser == None: # If exist is empty, username is avialable
-        return True
-    else:
-        return False
-'''
-
-
 
 
 

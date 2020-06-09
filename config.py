@@ -38,8 +38,8 @@ class User(db.Model):
     id = db.Column(db.String(30), unique=True, primary_key=True)
     username = db.Column(db.String(30), nullable=False)
     date_posted = db.Column(db.String(32), nullable=False, default=aslocaltimestr(datetime.utcnow()))
-    posts = db.relationship('Post', backref='author', lazy=True)
-    comments = db.relationship('Comment',backref='commentor',lazy=True)
+    posts = db.relationship('Post', backref='author', lazy=True,cascade="all, delete-orphan")
+    comments = db.relationship('Comment',backref='commentor',lazy=True,cascade="all, delete-orphan")
     def __repr__(self):
         return f"User('{self.id}',''{self.username}'','{self.date_posted}')"
 
@@ -49,7 +49,7 @@ class Post(db.Model):
     user_id = db.Column(db.String(30), db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
     date_posted = db.Column(db.String(32), nullable=False, default=aslocaltimestr(datetime.utcnow()))
-    comments = db.relationship('Comment',backref='root',lazy=True)
+    comments = db.relationship('Comment',backref='root',lazy=True,cascade="all, delete-orphan")
     def __repr__(self):
         return f"Post('{self.id}','{self.content}', '{self.date_posted}')"
 
@@ -128,7 +128,6 @@ def add_user(new_id,new_username, stamp=aslocaltimestr(datetime.utcnow())):
         db.session.add(new_user)
         db.session.commit()
         upload = {'id': new_user.id, 'name':new_user.username,'stamp': new_user.date_posted}
-        # print(upload)
         post(upload, 'users')
         return True
     else:
